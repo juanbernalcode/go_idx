@@ -1,16 +1,19 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
 	task "mymodule/tasks"
 	"os"
+	"strconv"
+	"strings"
 )
 
 
 func main() {
-	file, err := os.OpenFile("tasks.json", os.O_RDWR, 0666)
+	file, err := os.OpenFile("tasks.json", os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		panic(err)
 	}
@@ -38,7 +41,61 @@ func main() {
 		tasks = []task.Task{}
 	}
 
-	fmt.Println(tasks)
+	if (len(os.Args) < 2) {
+		printUsage()
+		return
+	}
+
+	switch os.Args[1] {
+	case "list":
+		task.ListTask(tasks)
+	case "add":
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Println("Cual es tu tarea?")
+		name, _ := reader.ReadString('\n')
+		name = strings.TrimSpace(name)
+
+		tasks = task.AddTask(tasks, name)
+		task.SaveTask(file, tasks)
+	case "delete":
+		if len(os.Args) < 3 {
+			fmt.Println("debes proporcionar un ID para eliminar")
+			return
+		}
+		id, err := strconv.Atoi(os.Args[2])
+		if err != nil {
+			fmt.Println("el id debe ser un numero")
+			return
+		}
+
+		tasks = task.DeleteTask(tasks, id)
+		task.SaveTask(file, tasks)
+		fmt.Println("Tarea eliminada")
+	case "complete":
+		if len(os.Args) < 3 {
+			fmt.Println("debes proporcionar un ID para eliminar")
+			return
+		}
+		id, err := strconv.Atoi(os.Args[2])
+		if err != nil {
+			fmt.Println("el id debe ser un numero")
+			return
+		}
+		tasks = task.CompleteTask(tasks, id)
+		task.SaveTask(file, tasks)
+
+	default:
+		printUsage()
+
+	}
 
 
+
+	
+
+
+} // fin de func main
+
+func printUsage() {
+	fmt.Println("Uso: go-clid-crud [list|add|complete|delete]")
 }
